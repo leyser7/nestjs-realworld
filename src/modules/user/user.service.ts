@@ -7,6 +7,7 @@ import { LoginUserDto } from './dto/loginUser.dto';
 import { UserEntity } from './user.entity';
 import { sign } from 'jsonwebtoken';
 import { JWT_SECRET } from '../../config';
+import { UpdateUserDto } from './dto/UpdateUserDto';
 @Injectable()
 export class UserService {
   constructor(
@@ -53,5 +54,22 @@ export class UserService {
     }
     delete user.password;
     return user;
+  }
+  async updateUser(id: number, updateUserDto: UpdateUserDto): Promise<UserEntity> {
+    const user = await this.findById(id);
+    if (updateUserDto.username || updateUserDto.email) {
+      const existingUser = await this.userRepository.findOne({
+        where: [
+          { username: updateUserDto.username },
+          { email: updateUserDto.email },
+        ],
+      });
+
+      if (existingUser && existingUser.id !== id) {
+        throw new ConflictException('Username or email already exists');
+      }
+    }
+    Object.assign(user, updateUserDto);
+    return await this.userRepository.save(user);
   }
 }
