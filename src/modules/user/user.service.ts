@@ -36,15 +36,22 @@ export class UserService {
       JWT_SECRET,
     );
   }
+  async findById(id: number): Promise<UserEntity> {
+    return await this.userRepository.findOne({ where: { id } });
+  }
   async buildResponse(user: UserEntity): Promise<UserResponse> {
     return { user: { ...user, token: this.generateJwt(user) } };
   }
   async loginUser(loginUserDto: LoginUserDto): Promise<UserEntity> {
     const { email, password } = loginUserDto;
-    const user = await this.userRepository.findOne({ where: { email } });
+    const user = await this.userRepository.findOne({
+      where: { email },
+      select: ['id', 'email', 'username', 'bio', 'image', 'password'],
+    });
     if (!user || !(await user.comparePassword(password))) {
       throw new ConflictException('Invalid username or password');
     }
+    delete user.password;
     return user;
   }
 }
