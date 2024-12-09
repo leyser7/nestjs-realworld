@@ -10,4 +10,6 @@ const config: TypeOrmModuleOptions = {
   autoLoadEntities: true,
   synchronize: true,
 };
-export default config;
+
+const JWT_SECRET = process.env.JWT_SECRET;
+export { config, JWT_SECRET };
