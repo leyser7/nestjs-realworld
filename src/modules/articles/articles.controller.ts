@@ -25,10 +25,11 @@ import { UpdateArticleDto } from './dto/UpdateArticle.dto';
 export class ArticlesController {
   constructor(private readonly articleService: ArticlesService) {}
   @Get()
-  async getArticles(@Query() query: any): Promise<ArticlesResponse> {
-    const articles = await this.articleService.findAll(query);
-
-    return { articles, articlesCount: articles.length };
+  async getArticles(
+    @User('id') currentUserId: number,
+    @Query() query: any,
+  ): Promise<ArticlesResponse> {
+    return await this.articleService.findAllArticle(currentUserId, query);
   }
   @Post()
   @UseGuards(AuthGuard)
@@ -47,7 +48,7 @@ export class ArticlesController {
   async getArticleBySlug(
     @Param('slug') slug: string,
   ): Promise<ArticleResponse> {
-    const article = await this.articleService.findBySlug(slug);
+    const article = await this.articleService.findArticleBySlug(slug);
     return this.articleService.buildArticleResponse(article);
   }
 
@@ -57,7 +58,7 @@ export class ArticlesController {
     @User() currentUser: UserEntity,
     @Param('slug') slug: string,
   ): Promise<ArticleResponse> {
-    const article = await this.articleService.findBySlug(slug);
+    const article = await this.articleService.findArticleBySlug(slug);
     if (!article) {
       throw new HttpException('Article not found', HttpStatus.NOT_FOUND);
     }
@@ -79,7 +80,7 @@ export class ArticlesController {
     @Param('slug') slug: string,
     @Body('article') updateArticleDto: UpdateArticleDto,
   ): Promise<ArticleResponse> {
-    const article = await this.articleService.findBySlug(slug);
+    const article = await this.articleService.findArticleBySlug(slug);
     if (!article) {
       throw new HttpException('Article not found', HttpStatus.NOT_FOUND);
     }
@@ -94,5 +95,30 @@ export class ArticlesController {
       updateArticleDto,
     );
     return this.articleService.buildArticleResponse(updatedArticle);
+  }
+
+  @Post(':slug/favorite')
+  @UseGuards(AuthGuard)
+  async addFavoriteToArticle(
+    @User('id') currentUserId: number,
+    @Param('slug') slug: string,
+  ): Promise<ArticleResponse> {
+    const favorite = await this.articleService.addFavoriteToArticle(
+      currentUserId,
+      slug,
+    );
+    return this.articleService.buildArticleResponse(favorite);
+  }
+  @Delete(':slug/favorite')
+  @UseGuards(AuthGuard)
+  async deleteFavoriteFromArticle(
+    @User('id') currentUserId: number,
+    @Param('slug') slug: string,
+  ): Promise<ArticleResponse> {
+    const favorite = await this.articleService.removeFavoriteFromArticle(
+      currentUserId,
+      slug,
+    );
+    return this.articleService.buildArticleResponse(favorite);
   }
 }
