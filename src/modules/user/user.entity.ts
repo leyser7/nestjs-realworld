@@ -1,5 +1,12 @@
-import { BeforeInsert, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  BeforeInsert,
+  Column,
+  Entity,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { hash, compare } from 'bcrypt';
+import { ArticleEntity } from '../articles/article.entity';
 
 @Entity({ name: 'users' })
 export class UserEntity {
@@ -18,7 +25,7 @@ export class UserEntity {
   @Column({ default: '' })
   image: string;
 
-  @Column({select: false})
+  @Column({ select: false })
   password: string;
 
   @BeforeInsert()
@@ -29,4 +36,6 @@ export class UserEntity {
   async comparePassword(attempt: string): Promise<boolean> {
     return await compare(attempt, this.password);
   }
+  @OneToMany(() => ArticleEntity, (article) => article.author)
+  articles: ArticleEntity[];
 }
