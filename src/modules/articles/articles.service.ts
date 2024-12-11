@@ -7,6 +7,7 @@ import { UserEntity } from '../user/user.entity';
 import { ArticleResponse } from './types/articleResponse.interface';
 import { UpdateArticleDto } from './dto/UpdateArticle.dto';
 import { ArticlesResponse } from './types/articlesResponse.interface';
+import { FollowEntity } from '../profile/follow.entity';
 
 @Injectable()
 export class ArticlesService {
@@ -15,6 +16,8 @@ export class ArticlesService {
     private articleRepository: Repository<ArticleEntity>,
     @InjectRepository(UserEntity)
     private userRepository: Repository<UserEntity>,
+    @InjectRepository(FollowEntity)
+    private followRepository: Repository<FollowEntity>,
   ) {}
 
   async findAllArticle(
@@ -64,6 +67,42 @@ export class ArticlesService {
     });
     return { articles: articlesWithFavorites, articlesCount: articles.length };
   }
+  async findArticleBySlug(slug: string): Promise<ArticleEntity> {
+    return await this.articleRepository.findOne({ where: { slug } });
+  }
+  async findFeedArticle(
+    currentUserId: number,
+    query: any,
+  ): Promise<ArticlesResponse> {
+    const take = query.limit || 20;
+    const skip = query.offset || 0;
+    const order = { createdAt: 'DESC' };
+    const user = await this.userRepository.findOne({
+      where: { id: currentUserId },
+      relations: ['favoriteArticles'],
+    });
+    const follow = await this.followRepository.find({
+      where: { followerId: currentUserId },
+    });
+    const followingIds = follow.map((user) => user.followingId);
+    if (followingIds.length === 0) {
+      return { articles: [], articlesCount: 0 };
+    }
+    const articles = await this.articleRepository.find({
+      where: { author: { id: In(followingIds) } },
+      take,
+      skip,
+      ...order,
+    });
+    const favoriteArticleIds = user.favoriteArticles.map(
+      (article) => article.id,
+    );
+    const articlesWithFavorites = articles.map((article) => {
+      const favorited = favoriteArticleIds.includes(article.id);
+      return { ...article, favorited };
+    });
+    return { articles: articlesWithFavorites, articlesCount: articles.length };
+  }
   async createArticle(
     currentUser: UserEntity,
     createArticleDto: CreateArticleDto,
@@ -90,9 +129,7 @@ export class ArticlesService {
   buildArticleResponse(article: ArticleEntity): ArticleResponse {
     return { article };
   }
-  async findArticleBySlug(slug: string): Promise<ArticleEntity> {
-    return await this.articleRepository.findOne({ where: { slug } });
-  }
+
   async deleteArticle(article: ArticleEntity): Promise<ArticleEntity> {
     return await this.articleRepository.remove(article);
   }
