@@ -33,7 +33,10 @@ export class ProfileService {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     }
     if (currentUserId === user.id) {
-      throw new HttpException('Follower and following user can not be the same', HttpStatus.BAD_REQUEST);
+      const errors = {
+        'Follower and following user': ['can not be the same'],
+      };
+      throw new HttpException({errors}, HttpStatus.UNPROCESSABLE_ENTITY);
     }
     const following = await this.followRepository.findOne({
       where: { followerId: currentUserId, followingId: user.id },
@@ -52,7 +55,10 @@ export class ProfileService {
       throw new HttpException('User not found', HttpStatus.NOT_FOUND);
     }
     if (currentUserId === user.id) {
-      throw new HttpException('Follower and following user can not be the same', HttpStatus.BAD_REQUEST);
+      const errors = {
+        'Follower and following user': ['can not be the same'],
+      };
+      throw new HttpException({errors}, HttpStatus.UNPROCESSABLE_ENTITY);
     }
     await this.followRepository.delete({
       followerId: currentUserId,

@@ -1,4 +1,9 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserResponse } from './types/userResponse.interface';
@@ -21,7 +26,11 @@ export class UserService {
       where: [{ username }, { email }],
     });
     if (existingUser) {
-      throw new ConflictException('Username or email already exists');
+      const errors = {
+        username: 'has already been taken',
+        email: 'has already been taken',
+      };
+      throw new HttpException({ errors }, HttpStatus.UNPROCESSABLE_ENTITY);
     }
     const newUser = new UserEntity();
     Object.assign(newUser, createUserDto);
@@ -50,12 +59,16 @@ export class UserService {
       select: ['id', 'email', 'username', 'bio', 'image', 'password'],
     });
     if (!user || !(await user.comparePassword(password))) {
-      throw new ConflictException('Invalid username or password');
+      const errors = { 'email or password': 'is invalid' };
+      throw new HttpException({ errors }, HttpStatus.UNAUTHORIZED);
     }
     delete user.password;
     return user;
   }
-  async updateUser(id: number, updateUserDto: UpdateUserDto): Promise<UserEntity> {
+  async updateUser(
+    id: number,
+    updateUserDto: UpdateUserDto,
+  ): Promise<UserEntity> {
     const user = await this.findById(id);
     if (updateUserDto.username || updateUserDto.email) {
       const existingUser = await this.userRepository.findOne({
