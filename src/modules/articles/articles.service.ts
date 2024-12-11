@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Like, Repository } from 'typeorm';
 import { ArticleEntity } from './article.entity';
@@ -8,6 +8,8 @@ import { ArticleResponse } from './types/articleResponse.interface';
 import { UpdateArticleDto } from './dto/UpdateArticle.dto';
 import { ArticlesResponse } from './types/articlesResponse.interface';
 import { FollowEntity } from '../profile/follow.entity';
+import { CommentEntity } from '../comment/comment.entity';
+import { CreateCommentDto } from '../comment/dto/createComment.dto';
 
 @Injectable()
 export class ArticlesService {
@@ -18,6 +20,8 @@ export class ArticlesService {
     private userRepository: Repository<UserEntity>,
     @InjectRepository(FollowEntity)
     private followRepository: Repository<FollowEntity>,
+    @InjectRepository(CommentEntity)
+    private commentRepository: Repository<CommentEntity>,
   ) {}
 
   async findAllArticle(
@@ -151,6 +155,9 @@ export class ArticlesService {
     slug: string,
   ): Promise<ArticleEntity> {
     const article = await this.articleRepository.findOne({ where: { slug } });
+    if (!article) {
+      throw new HttpException('Article not found', HttpStatus.NOT_FOUND);
+    }
     const user = await this.userRepository.findOne({
       where: { id: currentUser },
       relations: ['favoriteArticles'],
@@ -172,6 +179,9 @@ export class ArticlesService {
     slug: string,
   ): Promise<ArticleEntity> {
     const article = await this.articleRepository.findOne({ where: { slug } });
+    if (!article) {
+      throw new HttpException('Article not found', HttpStatus.NOT_FOUND);
+    }
     const user = await this.userRepository.findOne({
       where: { id: currentUser },
       relations: ['favoriteArticles'],
@@ -186,5 +196,49 @@ export class ArticlesService {
       await this.articleRepository.save(article);
     }
     return article;
+  }
+
+  async findCommentsByArticleSlug(slug: string): Promise<CommentEntity[]> {
+    const article = await this.articleRepository.findOne({ where: { slug } });
+    if (!article) {
+      throw new HttpException('Article not found', HttpStatus.NOT_FOUND);
+    }
+    return await this.commentRepository.find({
+      where: { article: { id: article.id } },
+    });
+  }
+  async addCommentToArticle(
+    currentUser: UserEntity,
+    slug: string,
+    comment: CreateCommentDto,
+  ): Promise<CommentEntity> {
+    const article = await this.articleRepository.findOne({ where: { slug } });
+    if (!article) {
+      throw new HttpException('Article not found', HttpStatus.NOT_FOUND);
+    }
+    const newComment = new CommentEntity();
+    newComment.body = comment.body;
+    newComment.author = currentUser;
+    newComment.article = article;
+    return await this.commentRepository.save(newComment);
+  }
+  async deleteComment(
+    currentUserId: number,
+    commentId: number,
+  ): Promise<CommentEntity> {
+    const comment = await this.commentRepository.findOne({
+      where: { id: commentId },
+      relations: ['author'],
+    });
+    if (!comment) {
+      throw new HttpException('Comment not found', HttpStatus.NOT_FOUND);
+    }
+    if (comment.author.id !== currentUserId) {
+      throw new HttpException(
+        'You are not the author of this comment',
+        HttpStatus.FORBIDDEN,
+      );
+    }
+    return await this.commentRepository.remove(comment);
   }
 }

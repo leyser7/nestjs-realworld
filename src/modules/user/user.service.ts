@@ -79,7 +79,11 @@ export class UserService {
       });
 
       if (existingUser && existingUser.id !== id) {
-        throw new ConflictException('Username or email already exists');
+        const errors = {
+          username: 'has already been taken',
+          email: 'has already been taken',
+        };
+        throw new HttpException({errors}, HttpStatus.UNPROCESSABLE_ENTITY);
       }
     }
     Object.assign(user, updateUserDto);

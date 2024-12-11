@@ -8,10 +8,15 @@ import { config } from './config';
 import { AuthMiddleware } from './modules/user/middlewares/auth/auth.middleware';
 import { ArticlesModule } from './modules/articles/articles.module';
 import { ProfileModule } from './modules/profile/profile.module';
-import { CommentModule } from './modules/comment/comment.module';
 
 @Module({
-  imports: [TypeOrmModule.forRoot(config), TagModule, UserModule, ArticlesModule, ProfileModule, CommentModule],
+  imports: [
+    TypeOrmModule.forRoot(config),
+    TagModule,
+    UserModule,
+    ArticlesModule,
+    ProfileModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

@@ -3,31 +3,15 @@ import {
   Column,
   Entity,
   ManyToOne,
-  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { ArticleEntity } from '../articles/article.entity';
 import { UserEntity } from '../user/user.entity';
-import { CommentEntity } from '../comment/comment.entity';
 
-@Entity({ name: 'articles' })
-export class ArticleEntity {
+@Entity({ name: 'comments' })
+export class CommentEntity {
   @PrimaryGeneratedColumn()
   id: number;
-
-  @Column()
-  slug: string;
-
-  @Column()
-  title: string;
-
-  @Column({ default: '' })
-  description: string;
-
-  @Column({ default: '' })
-  body: string;
-
-  @Column('simple-array')
-  tagList: string[];
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
@@ -35,17 +19,21 @@ export class ArticleEntity {
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   updatedAt: Date;
 
-  @Column({ default: 0 })
-  favoritesCount: number;
-
   @BeforeUpdate()
   updateTimestamp() {
     this.updatedAt = new Date();
   }
 
+  @Column()
+  body: string;
+
+  @ManyToOne(() => ArticleEntity, (article) => article.comments, {
+    cascade: true,
+    onDelete: 'CASCADE',
+    eager: true,
+  })
+  article: ArticleEntity;
+
   @ManyToOne(() => UserEntity, (user) => user.articles, { eager: true })
   author: UserEntity;
-
-  @OneToMany(() => CommentEntity, (comment) => comment.article)
-  comments: CommentEntity[];
 }

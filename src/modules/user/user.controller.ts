@@ -42,6 +42,7 @@ export class UserController {
   }
   @Put('user')
   @UseGuards(AuthGuard)
+  @UsePipes(new BackendValidationPipe())
   async updateCurrentUser(
     @User('id') currentUserId: number,
     @Body('user') updateUserDto: UpdateUserDto,

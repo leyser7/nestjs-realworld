@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { hash, compare } from 'bcrypt';
 import { ArticleEntity } from '../articles/article.entity';
+import { CommentEntity } from '../comment/comment.entity';
 
 @Entity({ name: 'users' })
 export class UserEntity {
@@ -44,4 +45,7 @@ export class UserEntity {
   @ManyToMany(() => ArticleEntity)
   @JoinTable()
   favoriteArticles: ArticleEntity[];
+
+  @OneToMany(() => CommentEntity, (comment) => comment.author)
+  comments: CommentEntity[];
 }
